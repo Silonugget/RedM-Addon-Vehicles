@@ -1,0 +1,112 @@
+<script>
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+class SoundEngine {
+  constructor() {
+    this.maxSpeed = 30;
+    this.speedToVolumeRatio = 0.1;
+    this.speedToPitchRatio = 7.0;
+    this.minVolume = 0.15; // Default minimum volume
+
+    this.gainNode = audioContext.createGain();
+    this.gainNode.connect(audioContext.destination);
+
+    this.sourceNode = null;
+  }
+
+  calculateVolume(speed) {
+    let volume = speed / this.maxSpeed * this.speedToVolumeRatio;
+    volume = Math.max(volume, this.minVolume); // Ensure volume doesn't go below minVolume
+    return volume;
+  }
+
+  calculatePitch(speed) {
+    const pitchSemitones = speed / this.maxSpeed * this.speedToPitchRatio;
+    return Math.pow(2, pitchSemitones / 12);
+  }
+
+  simulateSound(speed) {
+    const volume = this.calculateVolume(speed);
+    this.gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+  }
+
+  async loadSoundFile(filename) {
+    const response = await fetch(filename);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    return audioBuffer;
+  }
+
+  async startPlayback(filename, volumeOverride = null) {
+    const engineBuffer = await this.loadSoundFile(filename);
+
+    this.sourceNode = audioContext.createBufferSource();
+    this.sourceNode.buffer = engineBuffer;
+    this.sourceNode.loop = false;
+
+    this.sourceNode.connect(this.gainNode);
+    this.sourceNode.start();
+
+    if (volumeOverride !== null) {
+      this.gainNode.gain.setValueAtTime(volumeOverride, audioContext.currentTime);
+    }
+  }
+
+  async startIdlePlayback(filename) {
+    const engineBuffer = await this.loadSoundFile(filename);
+    this.sourceNode = audioContext.createBufferSource();
+    this.sourceNode.buffer = engineBuffer;
+    this.sourceNode.loop = true;
+    this.sourceNode.connect(this.gainNode);
+    this.sourceNode.start();
+  }
+
+  stopPlayback() {
+    if (this.sourceNode) {
+      this.sourceNode.stop();
+      this.sourceNode.disconnect();
+      this.sourceNode = null;
+    }
+  }
+
+  updateSpeed(speed, minVolume = this.minVolume) {
+    this.minVolume = minVolume; // Update minVolume
+    this.currentSpeed = speed;
+    this.simulateSound(speed);
+    const pitchMultiplier = this.calculatePitch(speed);
+    this.adjustPlaybackRate(pitchMultiplier);
+  }
+
+  adjustPlaybackRate(pitchMultiplier) {
+    if (this.sourceNode && this.sourceNode.playbackRate) {
+      this.sourceNode.playbackRate.setValueAtTime(pitchMultiplier, audioContext.currentTime);
+    }
+  }
+}
+
+const engine = new SoundEngine();
+
+window.addEventListener('message', function(event) {
+  switch (event.data.key) {
+    case "onStartVehicle":
+      engine.startPlayback(event.data.soundFile, 0.3); // Example volume override
+      break;
+    case "onEnteredVehicle":
+      engine.startIdlePlayback(event.data.soundFile);
+      break;
+    case "onStopVehicle":
+      engine.stopPlayback();
+	  engine.startPlayback(event.data.soundFile, 0.3)
+      break;
+    case "onSpeedChanged":
+      engine.updateSpeed(event.data.value, event.data.minVolume); // Pass minVolume
+      break;
+    default:
+      break;
+  }
+});
+
+
+
+
+</script>
