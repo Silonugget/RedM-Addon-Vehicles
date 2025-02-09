@@ -934,7 +934,6 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(20)
-        if Config.AltHandling then 
             if currentVehicle then
                 currentVehicle.inVehicle = IsPedInVehicle(PlayerPedId(), currentVehicle.vehicle, 1)
                 
@@ -946,13 +945,12 @@ Citizen.CreateThread(function()
                             local speed = GetEntitySpeed(vehicle)
                             local speedMph = speed * 2.23694  -- Convert m/s to mph
                             local vehicleHeightAboveGround = GetEntityHeightAboveGround(vehicle)
-                            if vehicleHeightAboveGround <= 0.67 then
+                            if vehicleHeightAboveGround <= 0.8 then
                                 if IsControlPressed(0, keyShift) and speedMph < currentVehicle.AltTopSpeed and speedMph > 10 and not IsControlPressed(0, keyA) and not IsControlPressed(0, keyD) then
                                     SetVehicleForwardSpeed(vehicle, speed + currentVehicle.AltAccelMultiplier)
                                 end
                             end
                         end
-                    end
                 end
             end
         end
