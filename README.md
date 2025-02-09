@@ -59,7 +59,7 @@ You will find coordinates and prices for dealerships in the dealership resource 
 ## Controls
 
 ### VORP Trainer
-- **Open Menu**: `F7`
+- **Open Menu**: `F6`
 
 ### Freeroam Trainer
 - **Open Menu**: `L`
